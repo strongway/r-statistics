@@ -1,0 +1,189 @@
+---
+title: "Statistics with R"
+subtitle: "Introduction"
+author: "Zhuanghua Shi (Strongway)"
+date: "8 May 2019"
+output: 
+  beamer_presentation: 
+    includes: 
+      in_header: preamble.tex
+citation_package: natbib
+link-citations: yes
+latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Challenges in Research
+
+\leftc{0.5}
+
+* Psychological research requires
+    * theory development
+    * Hypothesis testing
+* Empirical data analyses play key role in bridging the gap
+    * Statistics knowledge
+    * Statistics software (SPSS, Matlab, Excel, R)
+
+\figr{0.5}{bridge.jpg}
+
+# Why R?
+
+\pause
+
+* Open source
+* Large community
+* ...
+
+__Most important features__
+
+> R and RStudio constitute a powerful tool for reproducible research (RR)
+
+# Reproducible Research (RR)
+
+\leftc{0.5}
+
+* Research process is not linear, rather often redo some steps. 
+    * rerun experiments
+    * reanalyze data
+
+An ideal RR process should be able to adapt to flexible research process:
+
+- easy to expand experiments and data analyses
+- easy to maintain codes and text
+- easy to replot figures and to output statistics 
+
+\figr{0.5}{repeats.png}
+
+# Solution: Git, R, and Markdown
+
+- git for version controls (e.g., multiple experiments, minor variations)
+- R for statistics
+- RMarkdown for writing
+
+__RStudio__ integrates all of them seaminglessly. This course we will focus on _R for Statistics_. 
+
+# Aims of the course
+
+\leftc{0.6}
+
+* After this course, you should be able to  
+    * Exploratory data analysis (EDA)
+    * Import/Export various types of data
+    * Basic statistics (ANOVA etc.)
+    * Linear Regression
+    * Multiple and logistic regression
+
+* Lecturer and Tutors
+    * Strongway (me)
+    * Jan Nasenmann
+    * Artyom Zinchenko
+    
+\figr{0.4}{goals.jpg}
+
+# Schedule
+
+```{r, comment=NA,message=FALSE, results='asis', warning = FALSE}
+dates <- seq(as.Date('2019-05-08'), length.out = 12,by='1 week')
+dates <- as.character(dates) # bug in xtable
+contents <- c('Introduction', 
+              'Data Visualization',
+              'Practice 1',
+              'Data Wrangling',
+              'Practice 2',
+              'Hypothesis Testing',
+              'Bayes Analysis',
+              'Practice 3',
+              'Linear Regression',
+              'Generalized Linear models and Logistic Regression',
+              'Practice 4',
+              '-'
+              )
+kable(data.frame(dates, contents))
+```
+
+# Online learning materials and sources
+
+* The online book [An Introduction to Statistical and Data Sciences via R](http://www.moderndive.com)
+
+This book will be our reference book of the course.
+
+* [Datacamp](https://www.datacamp.com) 
+
+
+# Start with R and RStudio
+
+* R, RStudio, and Packages
+    * Please read the [chapter 2](http://www.moderndive.com/2-getting-started.html)
+
+* Get familiar with RStudio Inferface
+
+# Using R project
+
+* R projects
+    * make it straightforward to manage your files
+    * are platform independent
+    * have a root folder
+    * Version control
+    * .Rproj extension and one hiden folder
+    * Store your history .Rhistory
+
+Using R projects make you easy to run your codes across platforms and collaborate with colleagues. 
+
+# Data Import/Export
+
+- We encounter many types of data formats
+    - csv, excel, matlab, spss, web table, Sql
+- R {utils} provides basic import methods
+    - read.csv
+    - read.delim
+    - read.table
+- data.table package provides powerful function
+    - fread()
+- readr package (fast)
+    - read_csv
+    - read_delim
+    - read_tsv
+    
+## import text file basic functions
+
+> read.table(filename, header=TRUE, sep=',', stringsAsFactors = FALSE, col.names = c(...))
+
+- specific functions:
+    - read.csv()
+    - read.csv2()
+    - read.delim()
+    - read.delim2()
+- helper function
+    - file.path()
+    - past0()
+
+## Comparison between utils and readr
+
+utils          readr
+------         ----------
+read.table()   read_delim()
+read.csv()     read_csv()
+read.delim()   read_tsv()
+
+## fread() from data.table
+
+- super powerful, fast
+- automatically manage column names
+- infer column types and separators
+- select or drop columns
+
+## Import matlab file
+
+Two options for importing matlab data
+
+- convert data format to csv within Matlab
+- using package 'R.matlab' 
+    - readMat
+
+
+
+

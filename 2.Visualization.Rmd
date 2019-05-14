@@ -1,0 +1,296 @@
+---
+title: "Statistics with R"
+author: "Zhuanghua Shi (Strongway)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  slidy_presentation: default
+subtitle: Data Visualization
+citation_package: natbib
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+# Last week: Import/Export Data
+
+R can import and export many types of data. Most often format used are text, csv and excel files. 
+
+\fig{0.75}{import.png}
+
+# Import txt/csv files
+
+- Read tabular data into R
+
+`read.table(file, header = FALSE, sep = "", dec = ".")`
+
+- Read "comma separated value" files (".csv")
+
+`read.csv(file, header = TRUE, sep = ",", dec = ".", ...)`
+
+- Or use read.csv2: variant used in countries that use a comma as decimal point and a semicolon as field separator.
+
+`read.csv2(file, header = TRUE, sep = ";", dec = ",", ...)`
+
+- Read TAB delimited files
+
+`read.delim(file, header = TRUE, sep = "\t", dec = ".", ...)`
+`read.delim2(file, header = TRUE, sep = "\t", dec = ",", ...)`
+
+# Import txt/csv files using readr
+
+- `tidyverse` includes the package `readr`, a faster and friendly way to read table-like files. 
+    - `read_csv()`: comma separated (CSV) files
+    - `read_tsv()`: tab separated files
+    - `read_delim()`: general delimited files
+    - `read_fwf()`: fixed width files
+    - `read_table()`: tabular files where colums are separated by white-space.
+    - `read_log()`: web log files
+
+- `readr` provides consistence column specification (the most significant feature differs from the classical functions)
+
+# Import example
+
+- read the data `exp1.csv` and show its head
+
+```{r readdata, echo=TRUE}
+data = read_csv('data/exp1.csv')
+head(data, n = 3)
+```
+
+# Export/save Data
+
+- Exporting data is similar to importing data. You can simply change the above mentioned functions from `read*` to `write*`. 
+
+> `write.csv()`, `write.csv2()`, `write_csv()`
+
+- Import and export excel files requires additional package `readxl`. 
+
+- Save data for R Data Format: RDS
+
+> Save an object to a file
+
+> saveRDS(object, file = "my_data.rds")
+
+> Restore the object
+
+> readRDS(file = "my_data.rds")
+
+
+# Visualization with `ggplot2`
+
+- Visualization is a critical step for explorative data analysis (EDA)
+
+\fig{0.8}{flowchart.png}
+
+# `ggplot` grammar
+
+
+> `ggplot(data = <DATA>) + <GEOM_FUNCTION>(mapping = aes(<MAPPINGs))
+
+- Please refer to the cheatsheet. 
+    - Menu 'Help' -- 'Cheatsheets' -- 'Visualization with ggplot2'
+
+# An example
+
+Note, we've learned 'pipe' function `%>%`. First, we summarize the mean data, and then visualize them with line plots. 
+
+```{r dotplot, echo=TRUE}
+data %>% group_by(target, setsize) %>% 
+  summarise(mrt = mean(rt)) %>%
+  ggplot(data = .) + 
+    geom_line(mapping = aes(x = setsize, y = mrt, color = target ))
+```
+
+# Excercises
+
+1. use data `mpg` from ggplot2 package, and inspect the data structure.
+
+2. produce a scatterplot with x = displ, and y = hwy. 
+
+3. Make a scatterplot of hwy vs cyl
+
+# Aesthetic mappings
+
+An aesthetic is a visual property of the objects in your plot. 
+Aesthetics includes:
+
+- size
+- shape
+- color
+- transparency (alpha)
+
+You can display a point in different ways by changing the values of its aesthetic properties.
+
+# An example using aesthetic
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, color = class, size = cyl))
+```
+
+Try to change the size to class, and see what happens...
+
+
+# Aesthetic mappings
+
+For each aesthetic, you use `aes()` to associate the name of the aesthetic with a variable to display. 
+
+You can _set_ the aesthetic properties of your geom manually:
+
+- It should be outside `aes()`
+    - Color : a string
+    - Size  : a value in mm
+    - Shape : a number represents a shape (see below)
+    
+```{r}
+knitr::include_graphics('images/shapes.png')
+```
+
+# Excercises
+
+1. Scatter plot of data `mpg` with ` x= displ, y = hwy` with blue points
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+2. try to move `color = 'blue'` into `aes()`, and see what happens...
+
+3. please change the shape to square
+
+4. try `aes(color = displ < 5)` and see what happens...
+
+# Manually specify aesthetic
+
+By default, `ggplot2` takes care of the rest (which color maps to which group/condition, etc.). But you can change the aesthetic mapping manually. 
+
+This calls __scale__
+
+- scale_*_manual(values = c()): map aesthetic manually
+- scale_*_continuous(): map cont' values to visual ones
+- scale_*_discrete(): map discrete values to visual ones
+- scale_x_log10()
+- scale_x_reverse()
+- scale_x_sqrt()
+
+
+# common problem in plotting
+
+- ggplot using `+` for layering. 
+
+> If you miss the last part, R doesn't think you've typed a complete expression and it's waiting for you to finishe it.  __ESCAPE to abort__. 
+
+- `+` in a wrong place. 
+
+> It has to come at the end of the line, __not__ the start. 
+
+> If mappings are the same, you can move it to `ggplot()`. 
+
+# Some tipps
+
+- Barplot by default only plots the counts. If you want to plot mean etc, you need to specify `stat = 'identity'` 
+
+- Multiple conditions in Barplot `position = 'dodge'`. 
+
+- Be aware of your type of data (category vs. continuous)
+    - the data format will affect your graph. Using `factor()` or `as.numeric()` to convert your data type. 
+
+- `facet_*()` can be very helpful to examin individual participants
+    - `facet_wrap()`
+    - `facet_grid(A ~ B)`
+    
+
+# Excercises
+
+1. Please load data from `exp1.csv`, and visualize mean data for individual subjects with a `facet_*()` function
+
+
+# Geometric objects
+
+## Five Named Graphs - The 5NG
+
+- Scatterplots `geom_point()`
+- linegraphs `geom_line()`
+- histogram `geom_histogram()`
+- Boxplot `geom_boxplot()`
+- Barplots `geom_bar()`
+
+ggplot2 provides over 30 geoms, such as 
+
+- geom_smooth()
+- geom_area()
+- geom_errorbar()
+- geom_label()
+
+Please see the cheetsheet for details. 
+
+Extension packages provides even more (see https://www.ggplot2-exts.org).
+
+# Statitical transformations - Bar chart
+
+By default, `geom_bar()` plot the count. Internally, ggplot first calculate the counts, and then plot. For example:
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+```
+
+If you want to override the default 'count' mapping transformation, you can specify via `aes()`. For example, you may want to have internal variable 'proportion'.
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, y = ..prop.., group = 1))
+```
+
+# Position adjustments
+
+By default, bar plots stack bars one over another if you have a mapping to different conditions. For example:
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity))
+
+```
+
+## position adjustment with `position` argument
+
+Options:
+
+- identity
+- dodge (most useful one)
+- fill
+- jitter
+
+
+```{r}
+ggplot(data = diamonds) + 
+  geom_bar(mapping = aes(x = cut, fill = clarity), position = "dodge")
+```
+
+# Error bars - an example
+
+- Error bars are common in APA figures. 
+
+```{r errorbar, echo=TRUE}
+
+pos <- position_dodge(width = 4)
+
+data %>% group_by( setsize, target) %>% 
+  summarise(mrt = mean(rt), n = n(), se = sd(rt)/sqrt(n-1)) %>%
+  ggplot(., aes(x = setsize, y = mrt, color = target, fill = target )) + geom_bar(stat = 'identity', position = pos) +   geom_errorbar(aes(ymin=mrt , ymax = mrt + se),  position = pos, width = 2)
+```
+
+# Excercises
+
+- Produce the correct error bars for the dataset `exp1.csv`.
+
+# Acknowledgement
+
+- Some examples are taken from Hadley's book 'R for Data Science' (https://r4ds.had.co.nz)
+- exp1.csv comes from Shi's study - Dynamic visual search. 
+
+
+

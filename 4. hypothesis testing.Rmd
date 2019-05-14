@@ -1,0 +1,212 @@
+---
+title: "Statistics with R"
+subtitle: "Hypothesis Testing"
+author: "Zhuanghua Shi (Strongway)"
+date: "28 May 2018"
+output: 
+  beamer_presentation: 
+    includes: 
+      in_header: preamble.tex
+citation_package: natbib
+link-citations: yes
+latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(ez)
+```
+
+# Hypothesis testing
+
+Today we mainly cover
+
+1. t-distribution and t-tests
+    * Simple t-test
+    * Paired t-test
+2. Analysis of Variance (ANOVA)
+    * one-way ANOVA
+    * two-way ANOVA
+    * repeated-measures ANOVA
+
+
+# t-distribution
+
+Suppose we got $n$ samples ($X_i$) from a unknown population $N(\mu, \sigma^2)$, and we are interested in comparison the mean $\bar X$ to $\mu$. Often we replace $\sigma$ with the estimated standard deviation $S$, then $(\bar X - \mu)/(S/\sqrt n)$ is a t-distribution with $n-1$ degree of freedom. 
+
+* t-distribution is bell shaped with thicker tails than the normal distribution
+* `t.test()` is the command 
+
+# Example: a simple t-test
+
+\leftc{0.45}
+
+* `sleep` data from R datasets:
+    * the effect of two soporific drugs (increase in hours of sleep compared to control) on 10 patients
+
+\rightc{0.55}
+
+```{r fig.height=2, fig.width=2}
+ggplot(sleep, aes(x=group, 
+    y = extra)) + 
+  geom_boxplot()
+```
+
+\endc
+
+# Example: a simple t-test
+
+* A simple non-paired test using formula
+```{r}
+stat_t = t.test(extra ~ group, data = sleep)
+tidy(stat_t)
+```
+# Example: a paired t-test
+
+* For paired t-test you need to submit both x and y
+    1. reshape the table using `tidyverse`
+    2. using paired t-test(..., paired = T)
+```{r}
+sleep %>% spread(group, extra, sep = '_') %>% 
+  t.test(.$group_1, .$group_2, paired = T, data = .) %>%
+  tidy()
+```
+
+# ANOVA Test
+
+You need ANOVA when
+
+* If you have number of groups > 2 (categorical variable)
+* A single _continuous_ dependent variable
+* Separate, independent group of subjects
+* more than 2 measures from same subjects (repeated measures ANOVA)
+
+Null Hypothesis:
+
+* All groups are equal 
+
+Alternative Hypothesis:
+
+* At least one group has significant difference from the other
+
+# Variance partitioning in ANOVA
+
+
+\leftc{0.45}
+
+* Total variance can be divided into
+    * Variability that can be attributed to differences between groups
+    * Variability attributed to all other factors - within group variability
+  
+\figr{0.55}{anova.pdf}
+
+# Example: A simple ANOVA
+
+* command `aov()`
+
+```{r}
+sleep %>% aov(extra ~ group, data = .) %>% 
+  tidy()
+```
+
+# Example: A simple ANOVA
+
+* Now we consider subjects ID as a random effects
+    * using Error(ID) marked ID as random factor
+
+```{r}
+sleep %>% aov(extra ~ group + Error(ID), data = .) ->aov1
+summary(aov1)
+```
+
+# R formula
+
+R formulas are used in various modeling and statistics packages.
+
+* A typical formula: y is a function of x, a, and b
+
+> y ~ x + a + b
+
+* The sepal width is a function of petal width, conditioned on species
+
+> Sepal.Width ~ Petal.Width | Species
+
+
+# R forumula
+
+Symbols used in formula
+
+* `+` for adding independent variables
+* `-` for removing terms
+* `:` for interaction
+* `*` for crossing
+* `%in%` for nesting
+
+```{r, eval= FALSE}
+y ~ x1 - x2 # ignor x2
+
+y ~ x1*x2 # same as y ~ x1 + x2 + x1:x2
+
+```
+
+# Conditions for ANOVA
+
+* Independence
+* Approximate normality: distribution of the response variable shoudl be nearly normal within each group
+* Equal variance: groups should have roughly equal variability
+
+# ezANOVA
+
+* `ez` package by Michael Lawrence facilitates easy analysis of factorial experiments. 
+
+* It also contains a simulated data from Attention Network Test (ANT)
+
+```{r}
+library(ez)
+data(ANT) 
+ANT %>% dplyr::filter(error == 0) %>% 
+  group_by(group, cue, flank) %>%
+  summarise(mRT = mean(rt)) -> mRTs
+head(mRTs,3)
+```
+
+# ezANOVA and ANT
+
+* Visualize the data
+
+```{r fig.height=2.5, fig.width=5}
+mRTs %>% ggplot(aes(flank, mRT, color = cue, group = cue)) + 
+  geom_point() + geom_line() + facet_wrap(~group)
+```
+
+# ezANOVA and parameters
+
+* ezANOVA parameters
+    * data - data.frame table
+    * dv - dependent variable
+    * wid - subject id
+    * within - within factors, multiple using .() list
+    * between - between factors
+    * between_covariates - covariates
+* Return 
+    * Mauchly's test for specifity
+    * Sphericity corrections
+    * Levene's test for Homogeneity
+    * AOV
+
+# Test on ANT data
+
+```{r}
+results <- ezANOVA(filter(ANT, error == 0),
+                   rt, subnum, within=.(cue,flank),
+                   between = group)
+knitr::kable(results$ANOVA)
+```
+
+# Practice session
+
+Now we apply those tests for the _search data_. 
+

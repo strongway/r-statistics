@@ -1,0 +1,143 @@
+---
+title: "Statistics with R"
+subtitle: "Data Wrangling"
+author: "Zhuanghua Shi (Strongway)"
+date: "14 May 2018"
+output: 
+  beamer_presentation: 
+    includes: 
+      in_header: preamble.tex
+citation_package: natbib
+link-citations: yes
+latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+library(tidyverse)
+```
+
+# Dealing with data
+
+After you collect your raw data, you often need to:
+
+1. tidy data (remove/replace missing data)
+2. define outliers and refine your data
+3. select subset of your data
+4. join different data together
+5. summarize your data
+6. compute new type of data
+
+# Manipulate data with Tidyverse
+
+* Unlike traditional approach, `tidyverse` use pipes, which is close to our logical processing. 
+
+> Pipe operation: %>%
+
+  Data %>% Operator() %>% Operator() %>% ... -> Results
+
+# Most used operators
+  * `filter()` - pick rows based on conditions
+  * `group_by()` - group rows of observations together
+  * `summarize()` - compute summary measures, such as mean, sd, count etc.
+  * `mutate()` - create new variable (column)
+  * `arrange()` - sort the data based on a variable
+  
+
+> data %>% group_by(condition) %>% summarise(mrt = mean(RT))
+
+# The filter verb
+
+`filter()` select some rows 
+
+\fig{0.7}{filter.pdf}
+
+# Example
+
+```{r, echo = T}
+library(gapminder)
+gapminder %>% filter(year == 1952, country == 'Germany')
+```
+
+# The arrange verb
+
+`arrange()` sorts a table based on a variable
+
+\fig{0.7}{sort.pdf}
+
+# Example: Sorting with arrange
+
+```{r, echo = T}
+
+gapminder %>% arrange(gdpPercap)
+
+```
+
+# Example: Sorting with arrange
+
+* decending using `desc()`
+
+```{r, echo = T}
+
+gapminder %>% arrange(desc(gdpPercap))
+
+```
+
+# The mutate verb
+
+`mutate()` changes or adds variables
+
+\fig{0.7}{mutate.pdf}
+
+# Using mutate to change a variable
+
+```{r, echo = T}
+gapminder %>% mutate(pop = pop/1000000)
+```
+
+# Using mutate to add a new variable
+
+```{r, echo = T}
+gapminder %>% mutate(gdp = gdpPercap * pop)
+```
+
+# The summarize verb
+
+```{r, echo = T}
+gapminder %>% 
+  summarize(meanlifeExp = mean(lifeExp))
+
+```
+
+* Functions you can use for summarizing
+    * mean / median
+    * sum
+    * sd
+    * min/max
+
+# The group_by verb
+
+* group_by verb is useful if you want to summarize different groups
+
+```{r, echo = T}
+gapminder %>% 
+  group_by(year)%>%
+  summarize(meanlifeExp = mean(lifeExp))
+```
+
+# Join tables
+
+Please check the data manipulation cheat sheet. 
+
+* left_join(x,y, by = )
+* right_join(x,y, by = )
+* inner_join(x,y, by=)
+* full_join(x,y, by = )
+
+# Data manipulation example
+
+In the following practice, we will do a full process on data manipulation. The raw data are availabe in our shared github. 
+
+
+

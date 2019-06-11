@@ -1,15 +1,17 @@
 ---
 title: "Statistics with R"
-subtitle: "Hypothesis Testing"
-author: "Zhuanghua Shi (Strongway)"
-date: "28 May 2018"
-output: 
-  beamer_presentation: 
-    includes: 
+author: "Zhuanghua Shi (Strongway), Fredrik Allenmark"
+date: "11 June 2019"
+output:
+  slidy_presentation: default
+  beamer_presentation:
+    includes:
       in_header: preamble.tex
-citation_package: natbib
+  ioslides_presentation: default
 link-citations: yes
 latex_engine: xelatex
+subtitle: Hypothesis Testing
+citation_package: natbib
 ---
 
 ```{r setup, include=FALSE}
@@ -29,16 +31,141 @@ Today we mainly cover
     * Paired t-test
 2. Analysis of Variance (ANOVA)
     * one-way ANOVA
-    * two-way ANOVA
     * repeated-measures ANOVA
+    * multiple factor ANOVA
 
+# Null hypothesis testing
+
+* A common practice in statistics is testing whether a "null" hypothesis can be rejected
+* The null hypothesis can for example be that there is no difference between two groups
+* Or that some experimenental manipulation does not affect performance
+* The idea is that in general we do not know how big an effect, if any, to expect of an experimental manipulation
+* But we are interested in knowing whether there is any effect at all
+* That is, we want to know whether the null hypothesis can be rejected
+
+# Sampling distributions and p-values
+
+* Typically null hypothesis testing works like this:
+* Some aspects of a data set are summarized in terms of a test statitic (e.g. t, F, chi-squared...)
+* A probability distribution for this test statistic, given the null hypothesis, is known (under certain assumptions)
+
+# Sampling distributions and p-values
+
+* If our test statistic falls far out on the tail of the distribution our data are unlikely given the null hypothesis
+* We can calculate just how unlikely by integrating over the tail "outside" of the test statistic
+* This gives us a p-value
+
+# Sampling distributions and p-values
+
+* For example this shows the boundaries a t-statistic would need to fall outside for a p-value < 0.05 for a t-test with 
+19 degrees of freedom
+
+```{r, fig.height=4, fig.width=6}
+xp <- seq(-5, 5,0.01)
+data.frame(x = xp, y = dt(xp,19)) %>%
+  ggplot(aes(x=x, y=y)) + geom_line() + theme_classic() + 
+  labs(y="Probability density") + geom_vline(xintercept = qt(0.025, 19), linetype = 3) + 
+  geom_vline(xintercept = qt(0.975, 19), linetype = 3)
+```
+
+# Sampling distributions and p-values
+
+* The p-value says how likely it is to get data as extreme or more extreme than ours given the null hypothesis
+* That is, if the experiment was repeated many times how often would we get data more extreme than this if the null hypothesis is true
+
+# Type I and Type II errors
+
+* Type I error: Null hypothesis is rejected despite being true
+   * Type I error rate ($\alpha$): significance level
+    * $\alpha$ determines how small a p-value needs to be for the null hypothesis to be rejected
+    * A convention is to use $\alpha$ = 0.05
+* Type II error: Null hypothesis is not rejected despite being false
+    * Type II error rate ($\beta$): 1 - statistical power
+    * The power is a function of effect size
+    * Small effect sizes require larger sample sizes to get the same power
+    * Software like G*Power can be used for calculating the sample size required to get a particular level of power
+
+# Confidence intervals
+
+* A confidence interval is a way of indicating the uncertainty about a parameter
+* Confidence intervals can be calculated for different confidence levelse, 95% is a common choice
+* A 95% confidence interval means that if the experiment was repeated many times 
+  the confidence interval would contain the true value of the parameter on 95% of those repetitions
 
 # t-distribution
 
-Suppose we got $n$ samples ($X_i$) from a unknown population $N(\mu, \sigma^2)$, and we are interested in comparison the mean $\bar X$ to $\mu$. Often we replace $\sigma$ with the estimated standard deviation $S$, then $(\bar X - \mu)/(S/\sqrt n)$ is a t-distribution with $n-1$ degree of freedom. 
+Suppose we got $n$ samples ($X_i$) from an unknown population $N(\mu, \sigma^2)$, and we are interested in comparing the mean $\bar X$ to $\mu$. Often we replace $\sigma$ with the estimated standard deviation $S$, then $(\bar X - \mu)/(S/\sqrt n)$ is a t-distribution with $n-1$ degrees of freedom. 
 
 * t-distribution is bell shaped with thicker tails than the normal distribution
-* `t.test()` is the command 
+* `t.test()` is the command in R for the statistical test based on the t-distribution
+* The distribution itself can be accessed through the R-functions
+    - dt() for the probability density function
+    - pt() for the cumulative distribution function
+
+# t-distribution
+
+* with larger degrees of freedom the t-distribution becomes increasingly similar 
+  to a normal distribution
+
+```{r, fig.height=4, fig.width=6}
+xp <- seq(-5, 5,0.01)
+data.frame(x = rep(xp, 3), col = c(rep("t(df = 5)", length(xp)), rep("t(df = 20)", length(xp)), 
+                                   rep("N", length(xp))), y = c(dt(xp,5), dt(xp,20), 
+                                                                dnorm(xp))) %>%
+  ggplot(aes(x=x, y=y, color=col)) + geom_line() + theme_classic() + 
+  labs(y="Probability density") 
+```
+
+# t-distribution
+
+* with larger degrees of freedom the t-distribution becomes increasingly similar 
+  to a normal distribution
+
+```{r, fig.height=4, fig.width=6}
+xp <- seq(-5, 5,0.01)
+data.frame(x = rep(xp, 3), col = c(rep("t(df = 5)", length(xp)), rep("t(df = 20)", length(xp)), 
+                                   rep("N", length(xp))), y = c(pt(xp,5), pt(xp,20), 
+                                                                pnorm(xp))) %>%
+  ggplot(aes(x=x, y=y, color=col)) + geom_line() + theme_classic() + 
+  labs(y="Cumulative density") 
+```
+
+# R formulas
+
+R formulas are used in various modeling and statistics packages.
+They specify the dependences between variables in the model.
+
+* A typical formula: y is a function of x, a, and b
+
+> y ~ x + a + b
+
+* The sepal width is a function of petal width, conditioned on species
+
+> Sepal.Width ~ Petal.Width | Species
+
+
+# R formulas
+
+Symbols used in formulas
+
+* `+` for adding independent variables
+* `-` for removing terms
+* `:` for interaction
+* `*` for crossing
+* `/` for nesting
+* '0' can be used to specify a line through the origin (rarely useful in practice)
+
+```{r, eval= FALSE}
+
+y ~ x1*x2 # same as y ~ x1 + x2 + x1:x2
+
+y ~ x1*x2 - x2 # ignore x2, i.e. same as y ~ x1 + x1:x2
+
+y ~ x1 / x2 # same as x1 + x1:x2
+
+y ~ 0 + x1 # line through the origin
+
+```
 
 # Example: a simple t-test
 
@@ -59,30 +186,70 @@ ggplot(sleep, aes(x=group,
 
 # Example: a simple t-test
 
-* A simple non-paired test using formula
+* A simple non-paired test using a formula
 ```{r}
 stat_t = t.test(extra ~ group, data = sleep)
-tidy(stat_t)
+stat_t
 ```
+
+
+# Example: a simple t-test
+
+* A simple non-paired test using separate data vectors
+```{r}
+group1_extra <- filter(sleep, group==1)$extra
+group2_extra <- filter(sleep, group==2)$extra
+stat_t = t.test(group1_extra, group2_extra)
+stat_t
+```
+
 # Example: a paired t-test
 
-* For paired t-test you need to submit both x and y
-    1. reshape the table using `tidyverse`
-    2. using paired t-test(..., paired = T)
+* For a paired t-test you simply need to add the parameter "paired = TRUE"
 ```{r}
-sleep %>% spread(group, extra, sep = '_') %>% 
-  t.test(.$group_1, .$group_2, paired = T, data = .) %>%
-  tidy()
+stat_t = t.test(extra ~ group, data = sleep, paired = TRUE)
+stat_t
 ```
+
+# Example: a paired t-test - "manual" calculation
+
+* Paired t-test statistic: $t=\frac{mean(X1-X2)}{sd(X1-X2)/\sqrt{N}}$
+
+```{r}
+group1_extra <- filter(sleep, group==1)$extra
+group2_extra <- filter(sleep, group==2)$extra
+diff <- group1_extra - group2_extra
+N <- length(diff)
+t_value <-  mean(diff)/(sd(diff)/sqrt(N))
+t_value
+pt(t_value, N-1)*2
+```
+
+# Example: a paired t-test 
+
+* Our p-value corresponds to the area under the curve outside the two dotted lines (at 4.06 and -4.06)
+
+```{r, fig.height=4, fig.width=6}
+data.frame(x = xp, y = dt(xp,N-1)) %>%
+  ggplot(aes(x=x, y=y)) + geom_line() + theme_classic() + 
+  labs(y="Probability density") + geom_vline(xintercept = t_value, linetype = 3) + 
+  geom_vline(xintercept = - t_value, linetype = 3)
+```
+
 
 # ANOVA Test
 
-You need ANOVA when
+You need to use Analysis of Variance (ANOVA) when
 
-* If you have number of groups > 2 (categorical variable)
+* You have more than 2 groups (categorical variable)
+
+  and/or
+  
+* More than 2 measures from the same subjects (repeated measures ANOVA)
+
+  and
+  
 * A single _continuous_ dependent variable
-* Separate, independent group of subjects
-* more than 2 measures from same subjects (repeated measures ANOVA)
 
 Null Hypothesis:
 
@@ -90,20 +257,36 @@ Null Hypothesis:
 
 Alternative Hypothesis:
 
-* At least one group has significant difference from the other
+* At least one group is different from the others
 
 # Variance partitioning in ANOVA
 
-
 \leftc{0.45}
 
-* Total variance can be divided into
-    * Variability that can be attributed to differences between groups
-    * Variability attributed to all other factors - within group variability
+* Total variance can be divided into:
+* Variability that can be attributed to differences between groups
+    * We call this explained variance or between-group variability
+    * $\sum{_{i=1}^{K} n_i  (\bar{y_i} - \bar{y})^2 / (K-1)}$ 
+* Variability attributed to all other factors - within group variability
+    * We call this unexplained variance or within-group variability
+    * $\sum{_{i=1}^{K} \sum{_{j=1}^{n_i} (y_{ij} - \bar{y_i})^2 / (N-K)}}$ 
   
 \figr{0.55}{anova.pdf}
 
-# Example: A simple ANOVA
+# F-test
+
+* The ratio between the between and within group variance is the basis for the F-statistic
+* F = (Explained variance)/(Unexplained variance)
+* F = (Between-group variability)/(Within-group variability)
+* The F statistic follows the F-distribution with degrees of freedom:
+    * d1 = number of groups - 1 
+    * d2 = sample size - number of groups 
+* The F statistic is written as F(d1,d2) 
+    * e.g. for 20 samples in 2 groups: F(1, 18)
+* The F-statistic is used in the F-test, which is used (among other things) in ANOVA
+* The F-distribution is available in R with the functions df and pf
+
+# Example: A simple ANOVA 
 
 * command `aov()`
 
@@ -112,57 +295,67 @@ sleep %>% aov(extra ~ group, data = .) %>%
   tidy()
 ```
 
-# Example: A simple ANOVA
+# Example: A simple ANOVA - "manual" calculation (1)
 
-* Now we consider subjects ID as a random effects
-    * using Error(ID) marked ID as random factor
+* Explained variance: $\sum{_{i=1}^{K} n_i  (\bar{y_i} - \bar{y}) / (K-1)}$ 
 
 ```{r}
-sleep %>% aov(extra ~ group + Error(ID), data = .) ->aov1
+EV <- sum((c(mean(group1_extra), mean(group2_extra)) - mean(sleep$extra))^2)*10
+EV
+```
+
+* Unexplained variance: $\sum{_{i=1}^{K} \sum{_{j=1}^{n_i} (y_{ij} - \bar{y_i}) / (N-K)}}$ 
+
+```{r}
+UV_g1 <- sum((group1_extra - mean(group1_extra))^2) 
+UV_g2 <- sum((group2_extra - mean(group2_extra))^2)
+UV <- (UV_g1 + UV_g2)/18
+UV
+```
+
+# Example: A simple ANOVA - "manual" calculation (2)
+
+* F-statistic: (Explained variance)/(Unexplained variance)
+
+```{r}
+F <- EV/UV
+F
+```
+
+* p-value: pf(1,18)
+
+```{r}
+pf(F, 1, 18, lower.tail = FALSE)
+```
+
+# Example: Repeated measures ANOVA
+
+* In order to do repeated measures ANOVA with the aov function we need to:
+    * Specify that subjects ID should be a random effect
+    * Specify that the repeated measures are nested within the subjects ID
+* We just saw that Error(ID) marks ID as a random effect
+* In an R-forumla ID/X will nest X within ID
+
+```{r}
+sleep %>% aov(extra ~ group + Error(ID/group), data = .) -> aov1
 summary(aov1)
 ```
 
-# R formula
-
-R formulas are used in various modeling and statistics packages.
-
-* A typical formula: y is a function of x, a, and b
-
-> y ~ x + a + b
-
-* The sepal width is a function of petal width, conditioned on species
-
-> Sepal.Width ~ Petal.Width | Species
-
-
-# R forumula
-
-Symbols used in formula
-
-* `+` for adding independent variables
-* `-` for removing terms
-* `:` for interaction
-* `*` for crossing
-* `%in%` for nesting
-
-```{r, eval= FALSE}
-y ~ x1 - x2 # ignor x2
-
-y ~ x1*x2 # same as y ~ x1 + x2 + x1:x2
-
-```
 
 # Conditions for ANOVA
 
 * Independence
-* Approximate normality: distribution of the response variable shoudl be nearly normal within each group
+* Approximate normality: distribution of the response variable should be nearly normal within each group
 * Equal variance: groups should have roughly equal variability
+* Sphericity: equal variance of pairswise differences between within-subjects conditions
+    * Only relevant when a within-subject factor has 3 or more levels
+    * When sphericity is violated corrections can be made by altering the degrees of freedom 
 
 # ezANOVA
 
 * `ez` package by Michael Lawrence facilitates easy analysis of factorial experiments. 
 
-* It also contains a simulated data from Attention Network Test (ANT)
+* It also contains simulated data from the Attention Network Test (ANT)
 
 ```{r}
 library(ez)
@@ -199,6 +392,9 @@ mRTs %>% ggplot(aes(flank, mRT, color = cue, group = cue)) +
 
 # Test on ANT data
 
+* In this case we have two within subject factors and one between subject factor 
+* This means that 
+
 ```{r}
 results <- ezANOVA(filter(ANT, error == 0),
                    rt, subnum, within=.(cue,flank),
@@ -206,7 +402,30 @@ results <- ezANOVA(filter(ANT, error == 0),
 knitr::kable(results$ANOVA)
 ```
 
+
+# Test on ANT data - test for sphericity
+
+* ezANOVA automatically also tests for violations of sphericity
+
+```{r}
+knitr::kable(results$`Mauchly's Test for Sphericity`)
+```
+
+# Test on ANT data - sphericity corrections
+
+* ezANOVA provides two different types of sphericity corrections:
+    * GG = Greenhouse-Geisser
+    * HF = Huynh-Feldt 
+* The "GGe" and "HFe" indicates how much to alter the degrees of freedom
+    * corrected df = GGe (or HFe) * uncorrected df
+
+```{r}
+knitr::kable(results$`Sphericity Corrections`)
+```
+
 # Practice session
 
 Now we apply those tests for the _search data_. 
+
+
 

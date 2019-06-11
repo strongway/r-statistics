@@ -1,15 +1,16 @@
 ---
 title: "Statistics with R"
-subtitle: "Data Wrangling"
 author: "Zhuanghua Shi (Strongway)"
-date: "14 May 2018"
-output: 
-  beamer_presentation: 
-    includes: 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  slidy_presentation: default
+  beamer_presentation:
+    includes:
       in_header: preamble.tex
-citation_package: natbib
 link-citations: yes
 latex_engine: xelatex
+subtitle: Data Wrangling
+citation_package: natbib
 ---
 
 ```{r setup, include=FALSE}
@@ -39,6 +40,7 @@ After you collect your raw data, you often need to:
 
 # Most used operators
   * `filter()` - pick rows based on conditions
+  * `select()` - select variables (columns)
   * `group_by()` - group rows of observations together
   * `summarize()` - compute summary measures, such as mean, sd, count etc.
   * `mutate()` - create new variable (column)
@@ -49,7 +51,7 @@ After you collect your raw data, you often need to:
 
 # The filter verb
 
-`filter()` select some rows 
+`filter()` select some rows, often for subsecting the data. For example, you may want to filter out error trials and outliers. 
 
 \fig{0.7}{filter.pdf}
 
@@ -57,12 +59,29 @@ After you collect your raw data, you often need to:
 
 ```{r, echo = T}
 library(gapminder)
-gapminder %>% filter(year == 1952, country == 'Germany')
+gapminder %>% filter(year == 1952)
 ```
+
+# Filter with multiple comparision
+
+Multiple arguments (separated by ',') to filter() are combined with 'and'. For other types of combinations, you'll need to use Boolean operators: And(`&`), Or (`|`), Not(`!`)
+
+![](images/transform-logical.png)
+Compelete set of boolean operations (from r4ds.had.co.nz)
+
+# Filter - Excercise
+
+- Please select Africa countries from gapminder dataset
+- please find Europe countries between years 1950 and 2000
+
+```{r}
+gapminder %>% filter(continent == 'Europe', year >= 1950 & year <2000)
+```
+
 
 # The arrange verb
 
-`arrange()` sorts a table based on a variable
+`arrange()` sorts a table based on a variable. 
 
 \fig{0.7}{sort.pdf}
 
@@ -84,9 +103,18 @@ gapminder %>% arrange(desc(gdpPercap))
 
 ```
 
+# The select verb
+
+When you have a lot of variables, you may want to select those variables that you care about. `select()` allows you to do this baesd on the names of the variables. 
+
+```{r, echo = T}
+gapminder %>% select(country, continent, year, lifeExp)
+```
+
+
 # The mutate verb
 
-`mutate()` changes or adds variables
+Besides selecting sets of existing columns, it's often useful to add new columns that are functions of existing columns. `mutate()` does this job.
 
 \fig{0.7}{mutate.pdf}
 
@@ -101,8 +129,17 @@ gapminder %>% mutate(pop = pop/1000000)
 ```{r, echo = T}
 gapminder %>% mutate(gdp = gdpPercap * pop)
 ```
+# Useful creation functions
+
+- Arithmetic operators: `+, -, *, /, ^`.
+- Modular arithmetic `%/%` (integer division), `%%` (remainder)
+- logical comparisions:`==`,`!=`, etc. (useful when you create flags for correct trials)
+- Offsets: `lead()`, `lag()`  [useful when you want to do inter-trial analysis]
+- cumulative and rolling aggregates: `cumsum()`, 'cumprod()`, `cummin()`, `cummax()`
 
 # The summarize verb
+
+`summarise()` collapses a data frame to a single row according the statitical function you specify. 
 
 ```{r, echo = T}
 gapminder %>% 
@@ -110,21 +147,24 @@ gapminder %>%
 
 ```
 
-* Functions you can use for summarizing
-    * mean / median
-    * sum
-    * sd
-    * min/max
 
 # The group_by verb
 
-* group_by verb is useful if you want to summarize different groups
+It is very useful when `summarise()` comes togethers with `group_by()`. 
+
 
 ```{r, echo = T}
 gapminder %>% 
   group_by(year)%>%
   summarize(meanlifeExp = mean(lifeExp))
 ```
+
+# Excercise
+
+- summarize mean life expectancies for each countries over years
+- summarize mean life expectancies for different continents over years
+- visualize the above results
+
 
 # Join tables
 
@@ -135,7 +175,56 @@ Please check the data manipulation cheat sheet.
 * inner_join(x,y, by=)
 * full_join(x,y, by = )
 
-# Data manipulation example
+# Dealing with missing values
+
+Sometimes you may get data with some missing values. Those missing values may cause the above functions to unexpected results. 
+
+> Missing values are "contagious"!
+
+```{r, echo = T}
+
+NA > 5
+10 == NA
+NA  + 10
+NA == NA
+```
+
+# Filter out NA values
+
+- `is.na()` determines NA values
+
+```{r, echo = T}
+library(nycflights13) # use flights dataset for an example
+filter(flights, is.na(dep_delay))
+```
+
+# dealing with missing values
+
+Using `flights` dataset, we want to see the departure delay times over the months. Given that `dep_delay` has missing values, we need to filter those missing values first. 
+
+```{r, echo = T}
+
+flights %>% filter(!is.na(dep_delay)) %>% group_by(month) %>%
+  summarise(delay = mean(dep_delay))
+```
+
+# dealing with missing values
+
+Alternatively, you can deal with those missing values within the summarising functions. 
+Note, each function requires additional parameters `na.rm = TRUE` (i.e., removing NA values)
+
+
+```{r, echo = T}
+
+flights %>%  group_by(month) %>%
+  summarise(delay = mean(dep_delay, na.rm = TRUE))
+```
+
+# Excercise
+
+- Calculate average arrival delay time over the months for different carriers
+
+# A general excercise
 
 In the following practice, we will do a full process on data manipulation. The raw data are availabe in our shared github. 
 

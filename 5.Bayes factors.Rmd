@@ -10,7 +10,7 @@ output:
   ioslides_presentation: default
 link-citations: yes
 latex_engine: xelatex
-subtitle: Hypothesis Testing
+subtitle: Bayes factors
 citation_package: natbib
 ---
 
@@ -195,7 +195,7 @@ ggplot(data.frame(x=xp, y=likelihood), aes(x=x, y=y, group=1)) + geom_line() + t
 posterior <- prior*likelihood/avglikelihood
 ggplot(data.frame(x=rep(xp,2), y=c(prior,posterior), 
                   type=c(rep("prior", length(xp)), rep("posterior", length(xp)))), 
-       aes(x=x, y=y, color=type, group=type)) + geom_line() + theme_classic() + labs(x=expression(theta), y="Posterior")  + 
+       aes(x=x, y=y, color=type, group=type)) + geom_line() + theme_classic() + labs(x=expression(theta), y="Probability density")  + 
   geom_vline(aes(xintercept=xp[min(largelikelihood)]), linetype=5) +
   geom_vline(aes(xintercept=xp[max(largelikelihood)]), linetype=5)
 ```
@@ -266,7 +266,7 @@ kable(evidence_table)
 
 ![Relationship between p-values and Bayes factors](./images/p vs BF.png){width=500px}
 
-(Wetzels, Lee, Rouder, Iverson & Wagenmakersm, 2011; 
+(Wetzels, Lee, Rouder, Iverson & Wagenmakers, 2011; 
 Rouder, Morey, Speckman, Province, 2012)
 
 # The BayesFactor package
@@ -328,7 +328,7 @@ BF
 # Alternative hypothesis for the Bayesian t-test
 
 * We generally do not know what effect size to expect, if the null hypothes is false
-* Ideally we would have an alternative hypotheis which makes very precice predictions
+* Ideally we would have an alternative hypotheis which makes very precise predictions
 * This may be common in physics but not in psychology
 * So how do we specify an alternative hypothesis?
 * The best we can do is to specify a composite alternative hypothesis, which considers many different effect sizes as possible
@@ -444,7 +444,7 @@ anovaBF(extra ~ group + ID, whichRandom = "ID", data = sleep)
 
 # Bayesian ANOVA multiple factor example
 
-* Based on visual inspection ut looks like shape and color have additive effects
+* Based on visual inspection it looks like shape and color have additive effects
 
 ```{r, fig.height=4, fig.width=6}
 data(puzzles)
@@ -459,7 +459,7 @@ group_by(puzzles, shape, color) %>% summarize(mRT=mean(RT), seRT = sd(RT)/sqrt(N
 # Bayesian ANOVA multiple factor example
 
 * anovaBF returns four Bayes factors 
-* Each shows how a model compares to the null model
+* Each shows how a model compares to a comparison model, by default the null model
 * The comparison model is shown below the Bayes factors as the "denominator"
 
 ```{r}
@@ -508,6 +508,7 @@ puzzlesBF3
 
 # Exercises
 
+* Please download the course materials from the https://github.com/strongway/r-statistics repository
 * Please load the "exp1.csv" dataset in the data folder
 * This contains response times ("rt") for different conditions:
     * dynamic and static search ("dyn" factor)

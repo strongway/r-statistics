@@ -1,0 +1,297 @@
+---
+title: "Statistics with R"
+author: "Zhuanghua Shi (Strongway)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  slidy_presentation: default
+  in_header: preamble.tex
+  includes: null
+  beamer_presentation: null
+link-citations: yes
+latex_engine: xelatex
+subtitle: Linear Regression
+citation_package: natbib
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(broom)
+library(janitor)
+library(ez)
+```
+
+
+# Linear regression
+
+* A continuous dependent variable $Y$
+* One of more independent variables $X$
+
+We want to estimate their linear relationship:
+
+$$ Y = b_0 + b_1 X + \epsilon$$
+
+# An example of linear relationship
+
+* build-in `cars` dataset
+
+```{r}
+ggplot(cars, aes(speed, dist)) + geom_point() + 
+  geom_smooth(method = 'lm')
+```
+
+
+# Build linear model
+
+* Linear regression uses function `lm()`
+* `lm()` accept
+    * formula
+    * data
+
+```{r}
+mod1 = lm(dist ~ speed, data = cars)
+mod1
+```
+
+# Get model summary
+
+* summary(model) provides residuals, coefficients, statistics, significances, R-squared, F-tests
+
+```{r}
+summary(mod1)
+```
+
+# Goodness of fit
+
+* How do we know if the model is good fit?
+    * R-Square: higher the better 
+    * t-statistics: p-value should be less than 0.05
+
+# Prediction of the model
+
+* `predict(model, testData)`
+    * note: testData shold contain the IV variables
+
+```{r}
+p_dist = predict(mod1, data.frame(speed = c(20,21)))
+print(p_dist)
+```
+
+# R formula
+
+Recall the last session about R formula, and tell the meanings of the following formula. 
+
+$$Y \sim X1 + X2 + 1$$
+$$ Y \sim X1*X2 $$
+
+$$ Y \sim X1 - 1$$
+
+# Example of model comparison
+
+* Data: Allenmark et al. (2018) Pop-out search Experiment 1
+
+```{r}
+exp1 = read.csv('data/exp1.csv')
+mrt = exp1 %>% filter(correct == 1) %>% 
+  group_by(sub, target, setsize, dyn) %>% summarise(rt = mean(rt)) 
+head(mrt)
+```
+
+# Explore the data 
+* Explore the relation between the set size and mean reaction time
+    * Separate for target Absent / Present, Dynamic / Static
+
+```{r}
+mrt %>% ggplot(aes(setsize, rt, color = target)) + geom_jitter() + 
+  facet_grid(~dyn)
+```
+
+What we saw is that there are linear trends for static condition, but not for dynamic condition. 
+
+# Build linear models
+
+* Only main factors
+```{r}
+mod1 = lm(rt ~ setsize + target + dyn, data = mrt)
+summary(mod1)
+```
+
+The above regression suggests the following linear relation:
+
+$$rt = 1.78 + 0.04 \cdot N_{items} - 0.85  \cdot T_p - 0.65 * D_{Static}$$
+
+# Build linear models
+
+* Main factors and two-way interaction
+
+```{r}
+mod2 = lm(rt ~ setsize + target + dyn + setsize:target +
+                   setsize:dyn + target:dyn, data = mrt)
+summary(mod2)
+```
+
+
+# Compare two models
+
+* Using ANOVA method to compare the two models, with and without the second-order interaction
+
+```{r}
+anova(mod1, mod2)
+```
+
+The model comparison suggests that adding the second-order interaction does not make improvement. So we prefer the simple model. Note that there are other models, e.g., the model with main factors and one interaction of target and setsize. You may want to further compare other models as well. 
+
+# Remove insig. factor/interaction
+
+* `setsize:dyn` and `setsize:target` are not a critical interactions, shown by the above model. So we remove it. 
+
+```{r}
+mod3 = lm(rt ~ setsize + target + dyn + 
+                    target:dyn, data = mrt)
+summary(mod3)
+```
+
+# Compare models
+
+* Compared with and without the interaction 'target:dyn'
+    * Adding the interaction did make difference!
+
+```{r}
+anova(mod1, mod3)
+```
+
+# Visualize the best model
+
+* `lm` method provide direct `plot` for diagnose
+
+```{r}
+plot(mod3)
+```
+
+# Linear model with multiple subsets
+
+The above approach treated all subjects data together. However, we know there are huge between-subject variability. So the better way to do this is to do within-subject linear model. 
+
+## A commonn approach
+
+* filter out individual subject data
+* do linear regression
+* extract linear coefficients 
+* combined all linear results together into one table
+
+Tidyverse has a better way to integrate the above steps in 'tidy' flow. 
+
+# Iteraction and Nested table
+
+Iteraction is everywhere. In our previous sections, we use pipe to hide iteraction. For example:
+
+` data %>% group_by(fact1, fact2) %>% summarise(stat1 = mean(var1))`
+
+The above example is actually a two-loop iteraction. 
+
+Can we do similar for subset linear modelling?
+
+__Solution__: Nested table
+
+# Nested table
+
+Before we learn how to use multiple linear modelling, we need to understand what a nested table is. 
+
+## A nested table
+
+* still a data frame: columns, rows, cells
+* but those cells isn't restricted to numbers, strings or logicals
+* the cell itself can be dataframe!
+
+Let's try nest rt data for each subject. 
+
+```{r}
+nested_rt = mrt %>% group_by(sub) %>% nest()
+head(nested_rt)
+```
+
+The above table has one column called 'data', which contains `<tibble>` format cells. 
+
+## see the tibble cell
+
+let's see what subject 1 contains in `data`.
+```{r}
+nested_rt$data[[1]]
+```
+
+It contains the mean rts for the first subject! So what we can do is to submit the `data` cell for linear modelling. 
+
+# Linear model 
+
+In order to use nested table, we first need to build a function, which does the linear model. That is easy, simply reuse the above code and put them in a function. 
+
+```{r}
+lmod <- function(df){
+  lmfit = lm(rt ~ setsize + target + dyn + target:dyn, data = df)
+  return(lmfit)
+}
+
+```
+
+We then check if the above function is correct. 
+
+```{r}
+mod_sub1 = lmod(nested_rt$data[[1]])
+summary(mod_sub1)
+```
+# The map() function
+
+The map() function transform their input by applying a functionn to each element and returning a vector the same length as the input. 
+
+We can use map() to apply linear model for each subject `data` element. 
+
+```{r}
+nested_rt %>% mutate(model = map(data, lmod)) -> rt_models
+head(rt_models)
+```
+
+The return is a model list variable, which is also nested in the result. Let's see what we get in the cell.
+
+```{r}
+rt_models$model[[1]]
+```
+
+# Linear model return coefficients
+
+What we really want is the coefficients from the linear model. So we need to tidy a bit of the results
+
+```{r}
+nested_rt %>% mutate(model = map(data, lmod), result = map(model, tidy)) -> rt_models
+head(rt_models)
+```
+
+We have now the results, but still need to read them out. This can be done by `unnest()` function. 
+
+```{r}
+rt_models %>% 
+  unnest(result, .drop = TRUE) -> rt_coef
+head(rt_coef)
+```
+
+# Visualize the slopes
+
+```{r}
+rt_coef %>% group_by(term) %>% summarise(b = mean(estimate), n = n(), se = sd(estimate)/sqrt(n-1)) -> 
+  mean_coef
+
+mean_coef %>% ggplot(aes(term, b, ymin = b - se, ymax = b + se)) + geom_bar(stat = 'identity') + 
+  geom_errorbar(width = 0.5) + xlab('') + ylab('Intercept/Slopes') + theme_classic()
+```
+
+The above figure shows the major contribution to the linear equation are: display type, target type and their interaction. Set size is relative small, yet signifcant (ca. 47 ms per item.)
+
+
+# References
+
+Some contents from this session are from:
+
+1. Knoblauch & Maloney, Modeling Psychophysical Data in R, 2012
+2. An introduction to statiscal and Data Science via R, Moderndive.com
+3. R for Data Science (https://r4ds.had.co.nz)
+

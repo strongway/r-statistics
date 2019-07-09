@@ -1,15 +1,16 @@
 ---
 title: "Statistics with R"
-subtitle: "Logistic Regression"
+subtitle: Logistic Regression
 author: "Zhuanghua Shi (Strongway)"
-date: "18 June 2018"
-output: 
-  beamer_presentation: 
-  includes: 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  slidy_presentation: default
   in_header: preamble.tex
-citation_package: natbib
+  includes: null
+  beamer_presentation: null
 link-citations: yes
 latex_engine: xelatex
+citation_package: natbib
 ---
   
 ```{r setup, include=FALSE}
@@ -96,6 +97,8 @@ $$\ln\frac{P}{1-P} = b_0 + b_1 \cdot X$$
 * When $P = 0.75$, $X_{0.75} = (ln3 - b_0)/b_1$. So we can obtain the JND: $JND = ln3/b_1$
 
 # Build a function for tidyverse
+
+* Recall the last session - pipes for linear regression
 
 * Using `glm()` build a function
     * doing logistic regression
@@ -194,7 +197,6 @@ fit <- quickpsy(Vernier, Phaseshift, NumUpward, N,
 ```{r fig.height=3, fig.width=5}
 quickpsy(dat, soa, resp, grouping = .(sub), 
          within = .(mIntv), bootstrap = 'none') -> pses
-plotcurves(pses)
 ```
 
 # Visualize the thresholds
@@ -208,7 +210,10 @@ pses$thresholds %>% group_by(mIntv) %>%
   ggplot(aes(mIntv, mpse)) + geom_bar(stat = 'identity', width = 0.5)
 ```
 
-# Let's practice
+# Thank you!
 
-* Next two weeks - Jan Nasemann will provide related tutorials
+Due to NCP Day next week, we skip the practice session. 
+
+Thank you for your participation!
+
 
